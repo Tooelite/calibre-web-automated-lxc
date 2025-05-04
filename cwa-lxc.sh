@@ -218,7 +218,7 @@ features() {
   msg_info "q) Quit"
   echo
 
-  read -rp "Choose a feature to install [1/q]: " choice
+  read -rp "Choose a feature to install [1-4/q]: " choice
   case "$choice" in
     1)
       feature_enable_sshfs
