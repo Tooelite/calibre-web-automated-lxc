@@ -214,6 +214,7 @@ features() {
   msg_info "1) Enable SSHFS support"
   msg_info "2) Enable unattended updates"
   msg_info "3) Uninstall unattended updates"
+  msg_info "4) Show current unattended update status and config"
   msg_info "q) Quit"
   echo
 
@@ -228,6 +229,9 @@ features() {
     3)
       feature_uninstall_unattended_updates
       ;;
+    4)
+      feature_show_unattended_status
+      ;;
     q | Q)
       msg_info "Quitting."
       exit 0
@@ -239,6 +243,31 @@ features() {
       ;;
   esac
 }
+# Function to show unattended updates status
+feature_show_unattended_status(){
+    msg_info "==> Checking unattended-upgrades installation status..."
+    if dpkg -l | grep -q unattended-upgrades; then
+        msg_info "  > Package is installed."
+    else
+        msg_info "  > Package is NOT installed."
+    fi
+
+    msg_info "==> Checking systemd timer (if any)..."
+    systemctl list-timers | grep -i unattended || msg_info "  > No systemd timer found."
+
+    msg_info "==> Showing config: /etc/apt/apt.conf.d/20auto-upgrades"
+    [ -f /etc/apt/apt.conf.d/20auto-upgrades ] && cat /etc/apt/apt.conf.d/20auto-upgrades || msg_info "  > File not found."
+
+    msg_info "==> Showing config: /etc/apt/apt.conf.d/50unattended-upgrades"
+    [ -f /etc/apt/apt.conf.d/50unattended-upgrades ] && cat /etc/apt/apt.conf.d/50unattended-upgrades || msg_info "  > File not found."
+
+    msg_info "==> Showing last 2 days upgrade logs (if any)..."
+    sudo journalctl -u unattended-upgrades --since "2 days ago" --no-pager || msg_info "  > No journal logs found."
+   
+    msg_info "==> Optional: checking /var/log/unattended-upgrades/"
+    ls -l /var/log/unattended-upgrades 2>/dev/null || msg_info "  > Directory not found."
+}
+
 # Function to uninstall unattended update support
 feature_uninstall_unattended_updates() {
     msg_info "Removing unattended-upgrades..."
