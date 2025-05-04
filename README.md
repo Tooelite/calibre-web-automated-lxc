@@ -28,8 +28,9 @@ This is one suggested way:
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/ct/debian.sh)"
 ```
-Please note the script does not support updating the container. You have to take care of this yourself and configure unattended updates for example.
-This script has an option inside the features menu to turn on unattended updates if you like to handle this.
+Please note the debian install script does not support updating the container. You have to take care of this yourself and configure unattended updates for example.
+
+This cwa-installer script has an option inside the features menu to turn on unattended updates after installing debian.
 
 **Log into your Proxmox PVE webpage and launch this command inside your Proxmox PVE host system shell to create a new container.**
 
@@ -40,6 +41,10 @@ This script has an option inside the features menu to turn on unattended updates
 * 5GB disk size
 
 The disk size depends on your usecase. If you want to store your data inside the container aswell, please add more space to the container, as these are only the minimum requirements to keep the container running.
+
+3. After installing Debian log into the Debian LXC-container an go on using this script to install Calibre-Web-Automated LXC.
+
+4. Optional: after installing Calibe-Web-Automated use this script aswell to enable additional features.
 
 ## What does it look like ❓
 
