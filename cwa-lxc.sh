@@ -213,6 +213,7 @@ features() {
   header_features
   msg_info "1) Enable SSHFS support"
   msg_info "2) Enable unattended updates"
+  msg_info "3) Uninstall unattended updates"
   msg_info "q) Quit"
   echo
 
@@ -223,6 +224,10 @@ features() {
       ;;
     2)
       feature_enable_unattended_updates
+      ;;
+    3)
+      feature_uninstall_unattended_updates
+      ;;
     q | Q)
       msg_info "Quitting."
       exit 0
@@ -234,6 +239,15 @@ features() {
       ;;
   esac
 }
+# Function to uninstall unattended update support
+feature_uninstall_unattended_updates() {
+    msg_info "Removing unattended-upgrades..."
+    sudo apt remove --purge -y unattended-upgrades apt-listchanges
+    sudo rm -f /etc/apt/apt.conf.d/20auto-upgrades
+    sudo rm -f /etc/apt/apt.conf.d/50unattended-upgrades
+    msg_info "Unattended upgrades have been removed."
+}
+
 # Function to enable unattended update support
 feature_enable_unattended_updates() {
     msg_info "Installing required packages..."
