@@ -262,7 +262,7 @@ enable_sshfs() {
         msg_info "You can enable FUSE in the Proxmox LXC container options (features: fuse)."
         exit 1
     else
-        msg_info "FUSE is enabled. Proceeding with setup..."
+        msg_info "FUSE is enabled. Proceeding with setup...\n\n"
     fi
 
 
@@ -278,7 +278,7 @@ enable_sshfs() {
     else
         msg_info "Using default configuration values."
     fi
-    
+        
     # Confirm the selected configuration
     msg_info "\nThe following configuration will be used:"
     for key in "${!CONFIG[@]}"; do
@@ -291,7 +291,7 @@ enable_sshfs() {
         msg_info "Exiting the script. No changes were made."
         exit 1
     fi
-
+    msg_info "\n\n"
 
     # 3. Install SSHFS if it's not already installed
     install_sshfs=$(get_input "Do you want to check and install SSHFS if necessary? (y/n): " "y")
@@ -301,10 +301,10 @@ enable_sshfs() {
             msg_info "Installing SSHFS..."
             apt update && apt install -y sshfs
         else
-            msg_info "SSHFS is already installed."
+            msg_info "SSHFS is already installed.\n\n"
         fi
     else
-        msg_info "Skipping SSHFS installation."
+        msg_info "Skipping SSHFS installation.\n\n"
     fi
 
     
@@ -316,10 +316,10 @@ enable_sshfs() {
             msg_info "Creating SSH key..."
             ssh-keygen -t rsa -b 4096 -f "${CONFIG[SSH_KEY_PATH]}" -N ""
         else
-            msg_info "SSH key already exists."
+            msg_info "SSH key already exists.\n\n"
         fi
     else
-        msg_info "Skipping SSH key generation."
+        msg_info "Skipping SSH key generation.\n\n"
     fi
 
 
@@ -351,7 +351,7 @@ enable_sshfs() {
     else
         msg_info "Skipping copying the SSH public key."
     fi
-
+    msg_info "\n\n"
 
     # 6. Create the mount folder if it doesn't already exist
     create_mount=$(get_input "Do you want to create the local mount folder '${CONFIG[LOCAL_MOUNT]}'? (y/n): " "y")
@@ -362,6 +362,7 @@ enable_sshfs() {
     else
         msg_info "Skipping local mount folder creation."
     fi
+    msg_info "\n\n"
 
 
     # 7. Ask if the SSHFS entry should be added to /etc/fstab
@@ -377,7 +378,7 @@ enable_sshfs() {
         ssh_key="${CONFIG[SSH_KEY_PATH]}"
 
         if grep -q "sshfs#${remote_user}@${remote_host}:${remote_path} ${local_mount} fuse" /etc/fstab; then
-            msg_info "SSHFS entry already exists in /etc/fstab. Skipping entry creation."
+            msg_info "SSHFS entry already exists in /etc/fstab. Skipping entry creation.\n\n"
         else
             msg_info "Adding SSHFS entry to /etc/fstab..."
             cp /etc/fstab /etc/fstab.bak
@@ -386,11 +387,11 @@ enable_sshfs() {
             
             systemctl daemon-reload
 
-            msg_info "Mounting the filesystem..."
+            msg_info "Mounting the filesystem...\n\n"
             mount -a
         fi
     else
-        msg_info "Skipping SSHFS fstab entry creation."
+        msg_info "Skipping SSHFS fstab entry creation.\n\n"
     fi
 
   
@@ -406,6 +407,7 @@ enable_sshfs() {
     else
         msg_info "Skipping mount check."
     fi
+    msg_info "\n\n"
 
 
     # 9. Ask if the metadata.db file should be copied to the library directory on the mounted share
@@ -435,6 +437,7 @@ enable_sshfs() {
     else
         msg_info "Skipping the copy of the metadata.db file."
     fi
+    msg_info "\n\n"
 
     
     # 10. Patching the Calibre-Web Systemd Service and the auto_library.py file
@@ -485,6 +488,7 @@ enable_sshfs() {
     else
         msg_info "Skipping the patching of the systemd service and '/opt/cwa/scripts/auto_library.py'."
     fi
+    msg_info "\n\n"
     
     
     # feature for next release?
