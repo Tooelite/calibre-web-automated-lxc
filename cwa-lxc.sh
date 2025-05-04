@@ -50,6 +50,24 @@ EOF
   fi
 }
 
+header_features() {
+  t_width=$(tput cols 2>/dev/null)
+  if [[ "$t_width" -gt 90 ]]; then
+    echo -e "$(
+      cat <<EOF
+        ${CYAN}
+█████  █████  ███    █████  ██ ██  ████   █████  █████
+██     ██     ██ ██    ██   ██ ██  ██ ██  ██     ██
+██     ████   █████    ██   ██ ██  ████   ████     ███
+████   ██     ██ ██    ██   ██ ██  ██  ██ ██        ██
+██     █████  ██ ██    ██    ███   ██   ██ █████  █████
+
+${CLR}${YELLOW}Choose your additional feature${CLR}
+EOF
+    )"
+  fi
+}
+
 # Handling output suppression
 set_verbosity() {
   if [ "$verbose" -eq 1 ]; then
@@ -192,9 +210,7 @@ get_input() {
 # Main functions
 features() {
   header
-  printf "\n\n"
-  msg_info "Features"
-  msg_info "-----------------------------"
+  header_features
   msg_info "1) Enable SSHFS support"
   msg_info "q) Quit"
   echo
@@ -239,6 +255,8 @@ enable_sshfs() {
     
 
     # 1. Prompt the user to confirm if FUSE is enabled
+    msg_info "Fuse support"
+    msg_info "------------"
     fuse_enabled=$(get_input "Is FUSE enabled in this container? (y/n)" "y")
     
     if [[ "$fuse_enabled" != "y" && "$fuse_enabled" != "Y" ]]; then
@@ -246,11 +264,13 @@ enable_sshfs() {
         msg_info "You can enable FUSE in the Proxmox LXC container options (features: fuse)."
         exit 1
     else
-        msg_info "FUSE is enabled. Proceeding with setup..."
+        msg_info "FUSE is enabled. Proceeding with setup...\n\n"
     fi
 
 
     # 2. Ask if the user wants to adjust the configuration values
+    msg_info "Configuration parameters"
+    msg_info "------------------------"
     adjust_config=$(get_input "Do you want to adjust the default configuration values? (y/n): " "y")
     if [[ "$adjust_config" == "y" || "$adjust_config" == "Y" ]]; then
         msg_info "You will be prompted to adjust the following configuration parameters."
@@ -262,7 +282,7 @@ enable_sshfs() {
     else
         msg_info "Using default configuration values."
     fi
-    
+        
     # Confirm the selected configuration
     msg_info "\nThe following configuration will be used:"
     for key in "${!CONFIG[@]}"; do
@@ -275,39 +295,45 @@ enable_sshfs() {
         msg_info "Exiting the script. No changes were made."
         exit 1
     fi
-
+    msg_info "\n\n"
 
     # 3. Install SSHFS if it's not already installed
+    msg_info "SSHFS dependencies"
+    msg_info "------------------"
     install_sshfs=$(get_input "Do you want to check and install SSHFS if necessary? (y/n): " "y")
     if [[ "$install_sshfs" == "y" || "$install_sshfs" == "Y" ]]; then
-        msg_info "Checking if SSHFS is installed..."
+        msg_info "Checking if SSHFS is installed...\n"
         if ! command -v sshfs &> /dev/null; then
-            msg_info "Installing SSHFS..."
+            msg_info "Installing SSHFS...\n"
             apt update && apt install -y sshfs
         else
-            msg_info "SSHFS is already installed."
+            msg_info "SSHFS is already installed.\n\n"
         fi
     else
-        msg_info "Skipping SSHFS installation."
+        msg_info "Skipping SSHFS installation.\n\n"
     fi
 
     
     # 4. Generate SSH key if it doesn't exist
+    msg_info "SSH-key for share"
+    msg_info "-----------------"
     generate_ssh_key=$(get_input "Do you want to generate an SSH key (if it doesn't already exist)? (y/n): " "y")
     if [[ "$generate_ssh_key" == "y" || "$generate_ssh_key" == "Y" ]]; then
-        msg_info "Checking if the SSH key exists..."
+        msg_info "Checking if the SSH key exists...\n"
         if [[ ! -f "${CONFIG[SSH_KEY_PATH]}" ]]; then
-            msg_info "Creating SSH key..."
+            msg_info "Creating SSH key...\n"
             ssh-keygen -t rsa -b 4096 -f "${CONFIG[SSH_KEY_PATH]}" -N ""
         else
-            msg_info "SSH key already exists."
+            msg_info "SSH key already exists.\n\n"
         fi
     else
-        msg_info "Skipping SSH key generation."
+        msg_info "Skipping SSH key generation.\n\n"
     fi
 
 
     # 5. Copy the public SSH key to the remote server (optional)
+    msg_info "Copy public SSH-key to host"
+    msg_info "---------------------------"
     copy_ssh_key=$(get_input "Do you want to copy the SSH public key to the remote host? (y/n): " "y")
     if [[ "$copy_ssh_key" == "y" || "$copy_ssh_key" == "Y" ]]; then
         msg_info "Checking if the SSH public key is already on the remote server..."
@@ -322,7 +348,7 @@ enable_sshfs() {
             msg_info "The SSH public key is already in the 'authorized_keys' file on the remote server."
             replace_key=$(get_input "Do you want to replace the existing key? (y/n): " "y")
             if [[ "$replace_key" == "y" || "$replace_key" == "Y" ]]; then
-                msg_info "Removing the old key and adding the new one..."
+                msg_info "Removing the old key and adding the new one...\n"
                 ssh -i "$ssh_key" "$remote_user@$remote_host" "sed -i '/$pubkey/d' ~/.ssh/authorized_keys"
                 ssh-copy-id -i "${ssh_key}.pub" "$remote_user@$remote_host"
             else
@@ -335,9 +361,11 @@ enable_sshfs() {
     else
         msg_info "Skipping copying the SSH public key."
     fi
-
+    msg_info "\n\n"
 
     # 6. Create the mount folder if it doesn't already exist
+    msg_info "Create mount point"
+    msg_info "------------------"
     create_mount=$(get_input "Do you want to create the local mount folder '${CONFIG[LOCAL_MOUNT]}'? (y/n): " "y")
     if [[ "$create_mount" == "y" || "$create_mount" == "Y" ]]; then
         msg_info "Creating the local mount point if it doesn't exist..."
@@ -346,9 +374,12 @@ enable_sshfs() {
     else
         msg_info "Skipping local mount folder creation."
     fi
+    msg_info "\n\n"
 
 
     # 7. Ask if the SSHFS entry should be added to /etc/fstab
+    msg_info "Add SSHFS to /etc/fstab"
+    msg_info "-----------------------"
     set_fstab=$(get_input "Do you want to add an SSHFS entry to /etc/fstab for persistent mounting? (y/n): " "y")
     if [[ "$set_fstab" == "y" || "$set_fstab" == "Y" ]]; then
         msg_info "Checking if the SSHFS entry already exists in /etc/fstab..."
@@ -370,29 +401,34 @@ enable_sshfs() {
             
             systemctl daemon-reload
 
-            msg_info "Mounting the filesystem..."
+            msg_info "Mounting the filesystem...\n\n"
             mount -a
         fi
     else
-        msg_info "Skipping SSHFS fstab entry creation."
+        msg_info "Skipping SSHFS fstab entry creation.\n\n"
     fi
 
   
     # 8. Check if the mount is successful
+    msg_info "Check SSHFS mount"
+    msg_info "-----------------"
     check_mount=$(get_input "Do you want to check if the mount was successful? (y/n): " "y")
     if [[ "$check_mount" == "y" || "$check_mount" == "Y" ]]; then
-        msg_info "Checking if the mount was successful..."
+        msg_info "Checking if the mount was successful...\n"
         if mountpoint -q "${CONFIG[LOCAL_MOUNT]}"; then
             msg_info "Successfully mounted: ${CONFIG[LOCAL_MOUNT]}"
         else
             msg_err "Failed to mount the remote system."
         fi
     else
-        msg_info "Skipping mount check."
+        msg_info "Skipping mount check.\n"
     fi
+    msg_info "\n\n"
 
 
     # 9. Ask if the metadata.db file should be copied to the library directory on the mounted share
+    msg_info "Prepare directories on remote connections and copy metatata.db"
+    msg_info "--------------------------------------------------------------"
     copy_metadata=$(get_input "Do you want to copy '/opt/calibre-web/metadata.db' to the '/library' folder of the mounted share and create an initial directory structure on the share? (y/n): " "y")
     if [[ "$copy_metadata" == "y" || "$copy_metadata" == "Y" ]]; then
         msg_info "Creating the required folder structure on the mounted share..."
@@ -403,7 +439,7 @@ enable_sshfs() {
         # Copy the metadata.db file to the /library directory on the remote share
         msg_info "Copying the metadata.db file to '${CONFIG[LOCAL_MOUNT]}/library'..."
         cp /opt/calibre-web/metadata.db "${CONFIG[LOCAL_MOUNT]}/library/"
-        msg_info "File copied successfully."
+        msg_info "File copied successfully.\n"
         
         # Create the symlink for /opt/cwa-book-ingest pointing to the /ingest folder in the share
         msg_info "Creating symlink '/opt/cwa-book-ingest' to the '/ingest' folder in the mounted share..."
@@ -419,9 +455,12 @@ enable_sshfs() {
     else
         msg_info "Skipping the copy of the metadata.db file."
     fi
+    msg_info "\n\n"
 
     
     # 10. Patching the Calibre-Web Systemd Service and the auto_library.py file
+    msg_info "Patch CWA services with new remote host location"
+    msg_info "------------------------------------------------"
     patch_service=$(get_input "Do you want to patch the Calibre-Web systemd service and '${CONFIG[LOCAL_MOUNT]}/scripts/auto_library.py' to update the path to the share? (y/n): " "y")
     if [[ "$patch_service" == "y" || "$patch_service" == "Y" ]]; then
         msg_info "Patching the Calibre-Web systemd service and 'opt/cwa/scripts/auto_library.py' to use the correct paths..."
@@ -469,6 +508,7 @@ enable_sshfs() {
     else
         msg_info "Skipping the patching of the systemd service and '/opt/cwa/scripts/auto_library.py'."
     fi
+    msg_info "\n\n"
     
     
     # feature for next release?
