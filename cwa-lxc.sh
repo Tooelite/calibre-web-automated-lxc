@@ -461,7 +461,7 @@ feature_enable_sshfs() {
             msg_info "The SSH public key is already in the 'authorized_keys' file on the remote server."
             replace_key=$(get_input "Do you want to replace the existing key? (y/n): " "y")
             if [[ "$replace_key" == "y" || "$replace_key" == "Y" ]]; then
-                msg_info "Removing the old key and adding the new one...\n"
+                msg_info "Removing the old key and adding the new one..."
                 ssh -i "$ssh_key" "$remote_user@$remote_host" "sed -i '/$pubkey/d' ~/.ssh/authorized_keys"
                 ssh-copy-id -i "${ssh_key}.pub" "$remote_user@$remote_host"
             else
