@@ -50,6 +50,24 @@ EOF
   fi
 }
 
+header_features() {
+  t_width=$(tput cols 2>/dev/null)
+  if [[ "$t_width" -gt 90 ]]; then
+    echo -e "$(
+      cat <<EOF
+        ${CYAN}
+█████  █████  ███    █████  ██ ██  ████   █████  █████
+██     ██     ██ ██    ██   ██ ██  ██ ██  ██     ██
+██     ████   █████    ██   ██ ██  ████   ████     ███
+████   ██     ██ ██    ██   ██ ██  ██  ██ ██        ██
+██     █████  ██ ██    ██    ███   ██   ██ █████  █████
+
+${CLR}${YELLOW}Choose your additional feature${CLR}
+EOF
+    )"
+  fi
+}
+
 # Handling output suppression
 set_verbosity() {
   if [ "$verbose" -eq 1 ]; then
@@ -192,9 +210,7 @@ get_input() {
 # Main functions
 features() {
   header
-  printf "\n\n"
-  msg_info "Features"
-  msg_info "-----------------------------"
+  header_features
   msg_info "1) Enable SSHFS support"
   msg_info "q) Quit"
   echo
