@@ -331,7 +331,7 @@ write_upgrade_sources() {
     local choice="$1"
     local cfg="$2"
 
-    mgs_info "==> Writing allowed origins for unattended upgrades..."
+    msg_info "==> Writing allowed origins for unattended upgrades..."
     echo "Unattended-Upgrade::Allowed-Origins {" | sudo tee "$cfg" > /dev/null
     echo '        "Debian stable";' | sudo tee -a "$cfg" > /dev/null
 
