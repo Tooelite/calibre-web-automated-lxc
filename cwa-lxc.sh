@@ -269,14 +269,14 @@ enable_sshfs() {
     # 2. Ask if the user wants to adjust the configuration values
     adjust_config=$(get_input "Do you want to adjust the default configuration values? (y/n): " "y")
     if [[ "$adjust_config" == "y" || "$adjust_config" == "Y" ]]; then
-        msg_info "You will be prompted to adjust the following configuration parameters."
+        msg_info "You will be prompted to adjust the following configuration parameters.\n"
     
         # Loop through the config array and get user input for each parameter
         for key in "${!CONFIG[@]}"; do
             CONFIG[$key]=$(get_input "Enter the value for $key" "${CONFIG[$key]}")
         done
     else
-        msg_info "Using default configuration values."
+        msg_info "Using default configuration values.\n"
     fi
         
     # Confirm the selected configuration
@@ -288,7 +288,7 @@ enable_sshfs() {
     # Ask for confirmation before proceeding
     proceed=$(get_input "Do you want to proceed with this configuration? (y/n): " "y")
     if [[ "$proceed" != "y" && "$proceed" != "Y" ]]; then
-        msg_info "Exiting the script. No changes were made."
+        msg_info "Exiting the script. No changes were made.\n"
         exit 1
     fi
     msg_info "\n\n"
@@ -296,9 +296,9 @@ enable_sshfs() {
     # 3. Install SSHFS if it's not already installed
     install_sshfs=$(get_input "Do you want to check and install SSHFS if necessary? (y/n): " "y")
     if [[ "$install_sshfs" == "y" || "$install_sshfs" == "Y" ]]; then
-        msg_info "Checking if SSHFS is installed..."
+        msg_info "Checking if SSHFS is installed...\n"
         if ! command -v sshfs &> /dev/null; then
-            msg_info "Installing SSHFS..."
+            msg_info "Installing SSHFS...\n"
             apt update && apt install -y sshfs
         else
             msg_info "SSHFS is already installed.\n\n"
@@ -311,9 +311,9 @@ enable_sshfs() {
     # 4. Generate SSH key if it doesn't exist
     generate_ssh_key=$(get_input "Do you want to generate an SSH key (if it doesn't already exist)? (y/n): " "y")
     if [[ "$generate_ssh_key" == "y" || "$generate_ssh_key" == "Y" ]]; then
-        msg_info "Checking if the SSH key exists..."
+        msg_info "Checking if the SSH key exists...\n"
         if [[ ! -f "${CONFIG[SSH_KEY_PATH]}" ]]; then
-            msg_info "Creating SSH key..."
+            msg_info "Creating SSH key...\n"
             ssh-keygen -t rsa -b 4096 -f "${CONFIG[SSH_KEY_PATH]}" -N ""
         else
             msg_info "SSH key already exists.\n\n"
@@ -326,7 +326,7 @@ enable_sshfs() {
     # 5. Copy the public SSH key to the remote server (optional)
     copy_ssh_key=$(get_input "Do you want to copy the SSH public key to the remote host? (y/n): " "y")
     if [[ "$copy_ssh_key" == "y" || "$copy_ssh_key" == "Y" ]]; then
-        msg_info "Checking if the SSH public key is already on the remote server..."
+        msg_info "Checking if the SSH public key is already on the remote server...\n"
 
         # Lokale Variablen aus dem CONFIG-Array extrahieren
         ssh_key="${CONFIG[SSH_KEY_PATH]}"
@@ -335,32 +335,32 @@ enable_sshfs() {
         pubkey=$(< "${ssh_key}.pub")
 
         if ssh -i "$ssh_key" "$remote_user@$remote_host" "grep -q '$pubkey' ~/.ssh/authorized_keys"; then
-            msg_info "The SSH public key is already in the 'authorized_keys' file on the remote server."
+            msg_info "The SSH public key is already in the 'authorized_keys' file on the remote server.\n"
             replace_key=$(get_input "Do you want to replace the existing key? (y/n): " "y")
             if [[ "$replace_key" == "y" || "$replace_key" == "Y" ]]; then
-                msg_info "Removing the old key and adding the new one..."
+                msg_info "Removing the old key and adding the new one...\n"
                 ssh -i "$ssh_key" "$remote_user@$remote_host" "sed -i '/$pubkey/d' ~/.ssh/authorized_keys"
                 ssh-copy-id -i "${ssh_key}.pub" "$remote_user@$remote_host"
             else
-                msg_info "Keeping the existing key. Skipping key replacement."
+                msg_info "Keeping the existing key. Skipping key replacement.\n"
             fi
         else
-            msg_info "The SSH public key is not present on the remote server. Copying the key..."
+            msg_info "The SSH public key is not present on the remote server. Copying the key...\n"
             ssh-copy-id -i "${ssh_key}.pub" "$remote_user@$remote_host"
         fi
     else
-        msg_info "Skipping copying the SSH public key."
+        msg_info "Skipping copying the SSH public key.\n"
     fi
     msg_info "\n\n"
 
     # 6. Create the mount folder if it doesn't already exist
     create_mount=$(get_input "Do you want to create the local mount folder '${CONFIG[LOCAL_MOUNT]}'? (y/n): " "y")
     if [[ "$create_mount" == "y" || "$create_mount" == "Y" ]]; then
-        msg_info "Creating the local mount point if it doesn't exist..."
+        msg_info "Creating the local mount point if it doesn't exist...\n"
         mkdir -p "${CONFIG[LOCAL_MOUNT]}"
         chmod 755 "${CONFIG[LOCAL_MOUNT]}"
     else
-        msg_info "Skipping local mount folder creation."
+        msg_info "Skipping local mount folder creation.\n"
     fi
     msg_info "\n\n"
 
@@ -368,7 +368,7 @@ enable_sshfs() {
     # 7. Ask if the SSHFS entry should be added to /etc/fstab
     set_fstab=$(get_input "Do you want to add an SSHFS entry to /etc/fstab for persistent mounting? (y/n): " "y")
     if [[ "$set_fstab" == "y" || "$set_fstab" == "Y" ]]; then
-        msg_info "Checking if the SSHFS entry already exists in /etc/fstab..."
+        msg_info "Checking if the SSHFS entry already exists in /etc/fstab...\n"
 
         # Lokale Variablen aus CONFIG
         remote_user="${CONFIG[REMOTE_USER]}"
@@ -380,7 +380,7 @@ enable_sshfs() {
         if grep -q "sshfs#${remote_user}@${remote_host}:${remote_path} ${local_mount} fuse" /etc/fstab; then
             msg_info "SSHFS entry already exists in /etc/fstab. Skipping entry creation.\n\n"
         else
-            msg_info "Adding SSHFS entry to /etc/fstab..."
+            msg_info "Adding SSHFS entry to /etc/fstab...\n"
             cp /etc/fstab /etc/fstab.bak
 
             echo "sshfs#${remote_user}@${remote_host}:${remote_path} ${local_mount} fuse defaults,_netdev,allow_other,IdentityFile=${ssh_key} 0 0" >> /etc/fstab
@@ -398,14 +398,14 @@ enable_sshfs() {
     # 8. Check if the mount is successful
     check_mount=$(get_input "Do you want to check if the mount was successful? (y/n): " "y")
     if [[ "$check_mount" == "y" || "$check_mount" == "Y" ]]; then
-        msg_info "Checking if the mount was successful..."
+        msg_info "Checking if the mount was successful...\n"
         if mountpoint -q "${CONFIG[LOCAL_MOUNT]}"; then
             msg_info "Successfully mounted: ${CONFIG[LOCAL_MOUNT]}"
         else
-            msg_err "Failed to mount the remote system."
+            msg_err "Failed to mount the remote system.\n"
         fi
     else
-        msg_info "Skipping mount check."
+        msg_info "Skipping mount check.\n"
     fi
     msg_info "\n\n"
 
@@ -413,7 +413,7 @@ enable_sshfs() {
     # 9. Ask if the metadata.db file should be copied to the library directory on the mounted share
     copy_metadata=$(get_input "Do you want to copy '/opt/calibre-web/metadata.db' to the '/library' folder of the mounted share and create an initial directory structure on the share? (y/n): " "y")
     if [[ "$copy_metadata" == "y" || "$copy_metadata" == "Y" ]]; then
-        msg_info "Creating the required folder structure on the mounted share..."
+        msg_info "Creating the required folder structure on the mounted share...\n"
         
         # Create the /library and /ingest directories if they don't exist
         ssh -i "${CONFIG[SSH_KEY_PATH]}" "${CONFIG[REMOTE_USER]}@${CONFIG[REMOTE_HOST]}" "mkdir -p ${CONFIG[REMOTE_PATH]}/library ${CONFIG[REMOTE_PATH]}/ingest"
@@ -421,21 +421,21 @@ enable_sshfs() {
         # Copy the metadata.db file to the /library directory on the remote share
         msg_info "Copying the metadata.db file to '${CONFIG[LOCAL_MOUNT]}/library'..."
         cp /opt/calibre-web/metadata.db "${CONFIG[LOCAL_MOUNT]}/library/"
-        msg_info "File copied successfully."
+        msg_info "File copied successfully.\n"
         
         # Create the symlink for /opt/cwa-book-ingest pointing to the /ingest folder in the share
-        msg_info "Creating symlink '/opt/cwa-book-ingest' to the '/ingest' folder in the mounted share..."
+        msg_info "Creating symlink '/opt/cwa-book-ingest' to the '/ingest' folder in the mounted share...\n"
         ln -sf "${CONFIG[LOCAL_MOUNT]}/ingest" /opt/cwa-book-ingest
-        msg_info "Symlink created successfully."
+        msg_info "Symlink created successfully.\n"
         
         # Inform the user about the Calibre-Web configuration
-        msg_warn "Important Note: You need to set the database path in the Calibre-Web Automated GUI to '${CONFIG[LOCAL_MOUNT]}/library/metadata.db'."
+        msg_warn "Important Note: You need to set the database path in the Calibre-Web Automated GUI to '${CONFIG[LOCAL_MOUNT]}/library/metadata.db'.\n"
         
         # Inform the user that the ingest folder is now available in the share
-        msg_warn "The '/ingest' folder is now available on the remote share under '${CONFIG[REMOTE_PATH]}/ingest'. You can now use this folder to add files directly via SSH/SFTP."
+        msg_warn "The '/ingest' folder is now available on the remote share under '${CONFIG[REMOTE_PATH]}/ingest'. You can now use this folder to add files directly via SSH/SFTP.\n"
         
     else
-        msg_info "Skipping the copy of the metadata.db file."
+        msg_info "Skipping the copy of the metadata.db file.\n"
     fi
     msg_info "\n\n"
 
@@ -443,7 +443,7 @@ enable_sshfs() {
     # 10. Patching the Calibre-Web Systemd Service and the auto_library.py file
     patch_service=$(get_input "Do you want to patch the Calibre-Web systemd service and '${CONFIG[LOCAL_MOUNT]}/scripts/auto_library.py' to update the path to the share? (y/n): " "y")
     if [[ "$patch_service" == "y" || "$patch_service" == "Y" ]]; then
-        msg_info "Patching the Calibre-Web systemd service and 'opt/cwa/scripts/auto_library.py' to use the correct paths..."
+        msg_info "Patching the Calibre-Web systemd service and 'opt/cwa/scripts/auto_library.py' to use the correct paths...\n"
         
         # Path to the systemd service file
         SERVICE_FILE="/etc/systemd/system/cps.service"
@@ -457,7 +457,7 @@ enable_sshfs() {
             cp "$SERVICE_FILE" "$SERVICE_FILE.bak"
         
             # Update the WorkingDirectory and ExecStart paths in the systemd service to use the correct location
-            msg_info "Updating the systemd service to use the new path..."
+            msg_info "Updating the systemd service to use the new path...\n"
             sed -i "s|/opt/calibre-web|${CONFIG[LOCAL_MOUNT]}/library|g" "$SERVICE_FILE"
         
             # Reload systemd to apply the changes
@@ -466,9 +466,9 @@ enable_sshfs() {
             # Restart the service to apply the new configuration
             systemctl restart cps.service
         
-            msg_info "The systemd service has been updated and restarted successfully."
+            msg_info "The systemd service has been updated and restarted successfully.\n"
         else
-            msg_err "Error: The systemd service file '$SERVICE_FILE' does not exist."
+            msg_err "Error: The systemd service file '$SERVICE_FILE' does not exist.\n"
         fi
         
         # Ensure the Python file exists before modifying
@@ -477,16 +477,16 @@ enable_sshfs() {
             cp "$PYTHON_FILE" "$PYTHON_FILE.bak"
         
             # Update the library_dir path in the Python script
-            msg_info "Updating '${CONFIG[LOCAL_MOUNT]}/scripts/auto_library.py' to use the new path..."
+            msg_info "Updating '${CONFIG[LOCAL_MOUNT]}/scripts/auto_library.py' to use the new path...\n"
             sed -i "s|/opt/calibre-web|${CONFIG[LOCAL_MOUNT]}/library|g" "$PYTHON_FILE"
         
-            msg_info "'/opt/cwa/scripts/auto_library.py' has been updated successfully."
+            msg_info "'/opt/cwa/scripts/auto_library.py' has been updated successfully.\n"
         else
-            msg_err "Error: The Python file '$PYTHON_FILE' does not exist."
+            msg_err "Error: The Python file '$PYTHON_FILE' does not exist.\n"
         fi
     
     else
-        msg_info "Skipping the patching of the systemd service and '/opt/cwa/scripts/auto_library.py'."
+        msg_info "Skipping the patching of the systemd service and '/opt/cwa/scripts/auto_library.py'.\n"
     fi
     msg_info "\n\n"
     
