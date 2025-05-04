@@ -891,6 +891,6 @@ features)
   features 
   ;;  
 *)
-  die "Unknown command. Choose 'install' or 'update'."
+  die "Unknown command. Choose 'install', 'features' or 'update'."
   ;;
 esac
