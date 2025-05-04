@@ -68,6 +68,8 @@ bash cwa-lxc.sh [-h,--help][-v,--verbose][--no-color] install
 
 There is an another switch to extend functionality.
 
+![](./features.png)
+
 For now there is an option to enable shares for the library and ingest folder via SSHFS.
 The main idea behind this is to keep data out of the LXC container to keep it tiny and low on resources.
 
