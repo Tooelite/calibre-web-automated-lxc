@@ -574,9 +574,9 @@ feature_enable_sshfs() {
     # 10. Patching the Calibre-Web Systemd Service and the auto_library.py file
     msg_info "Patch CWA services with new remote host location"
     msg_info "------------------------------------------------"
-    patch_service=$(get_input "Do you want to patch the Calibre-Web systemd service and '${CONFIG[LOCAL_MOUNT]}/scripts/auto_library.py' to update the path to the share? (y/n): " "y")
+    patch_service=$(get_input "Do you want to patch the Calibre-Web systemd service and '/opt/cwa/scripts/auto_library.py' to update the path to the share? (y/n): " "y")
     if [[ "$patch_service" == "y" || "$patch_service" == "Y" ]]; then
-        msg_info "Patching the Calibre-Web systemd service and 'opt/cwa/scripts/auto_library.py' to use the correct paths..."
+        msg_info "Patching the Calibre-Web systemd service and '/opt/cwa/scripts/auto_library.py' to use the correct paths..."
         
         # Path to the systemd service file
         SERVICE_FILE="/etc/systemd/system/cps.service"
