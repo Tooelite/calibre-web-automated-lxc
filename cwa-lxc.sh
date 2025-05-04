@@ -212,6 +212,7 @@ features() {
   header
   header_features
   msg_info "1) Enable SSHFS support"
+  msg_info "2) Enable unattended updates"
   msg_info "q) Quit"
   echo
 
@@ -220,6 +221,8 @@ features() {
     1)
       feature_enable_sshfs
       ;;
+    2)
+      feature_enable_unattended_updates
     q | Q)
       msg_info "Quitting."
       exit 0
@@ -231,6 +234,78 @@ features() {
       ;;
   esac
 }
+# Function to enable unattended update support
+feature_enable_unattended_updates() {
+    msg_info "Installing required packages..."
+    sudo apt update
+    sudo apt install -y unattended-upgrades apt-listchanges
+
+    msg_info "Which updates should be automatically installed?"
+    msg_info "1) Security updates only"
+    msg_info "2) Security + system/distribution updates"
+    update_scope=$(get_input "Enter your choice (1 or 2)" "1")
+
+    local cfg1="/etc/apt/apt.conf.d/50unattended-upgrades"
+    sudo touch "$cfg1"
+    create_backup_if_needed "$cfg1"
+    write_upgrade_sources "$update_scope" "$cfg1"
+    write_upgrade_options "$cfg1"
+
+    local cfg2="/etc/apt/apt.conf.d/20auto-upgrades"
+    sudo touch "$cfg2"
+    create_backup_if_needed "$cfg2"
+
+    cat <<EOF | sudo tee "$cfg2" > /dev/null
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Download-Upgradeable-Packages "1";
+APT::Periodic::AutocleanInterval "7";
+APT::Periodic::Unattended-Upgrade "1";
+EOF
+
+    msg_info "==> Running dry-run to test configuration..."
+    sudo unattended-upgrades --dry-run --debug
+
+    msg_info "==> Unattended upgrades setup completed successfully."
+}
+
+create_backup_if_needed() {
+    local file="$1"
+    if [ -f "$file" ]; then
+        local timestamp
+        timestamp=$(date +%Y%m%d_%H%M%S)
+        local backup="${file}.bak_${timestamp}"
+        sudo cp "$file" "$backup"
+        msg_info "  > Backup created: $backup"
+    fi
+}
+
+write_upgrade_sources() {
+    local choice="$1"
+    local cfg="$2"
+
+    mgs_info "==> Writing allowed origins for unattended upgrades..."
+    echo "Unattended-Upgrade::Allowed-Origins {" | sudo tee "$cfg" > /dev/null
+    echo '        "Debian stable";' | sudo tee -a "$cfg" > /dev/null
+
+    if [[ "$choice" == "2" ]]; then
+        echo '        "Debian stable-updates";' | sudo tee -a "$cfg" > /dev/null
+    fi
+
+    echo '        "Debian-security stable/updates";' | sudo tee -a "$cfg" > /dev/null
+    echo "};" | sudo tee -a "$cfg" > /dev/null
+}
+
+write_upgrade_options() {
+    local cfg="$1"
+
+    cat <<EOF | sudo tee -a "$cfg" > /dev/null
+Unattended-Upgrade::Package-Blacklist {
+};
+
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "03:00";
+EOF
+
 
 # Function to enable SSHFS support
 feature_enable_sshfs() {
