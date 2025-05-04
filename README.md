@@ -44,7 +44,7 @@ The disk size depends on your usecase. If you want to store your data inside the
 
 3. After installing Debian log into the Debian LXC-container an go on using this script to install Calibre-Web-Automated LXC.
 
-4. Optional: after installing Calibe-Web-Automated use this script aswell to enable additional features.
+4. Optional: after installing Calibe-Web-Automated use this script again to enable additional features (see below how to do that).
 
 ## What does it look like ❓
 
