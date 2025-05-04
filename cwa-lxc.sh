@@ -218,7 +218,7 @@ features() {
   read -rp "Choose a feature to install [1/q]: " choice
   case "$choice" in
     1)
-      enable_sshfs
+      feature_enable_sshfs
       ;;
     q | Q)
       msg_info "Quitting."
@@ -233,7 +233,7 @@ features() {
 }
 
 # Function to enable SSHFS support
-enable_sshfs() {
+feature_enable_sshfs() {
     
     # Check if the script is being run as root
     if [[ $EUID -ne 0 ]]; then
