@@ -294,13 +294,13 @@ feature_enable_unattended_updates() {
 
     local cfg1="/etc/apt/apt.conf.d/50unattended-upgrades"
     sudo touch "$cfg1"
-    create_backup_if_needed "$cfg1"
+    #create_backup_if_needed "$cfg1"
     write_upgrade_sources "$update_scope" "$cfg1"
     write_upgrade_options "$cfg1"
 
     local cfg2="/etc/apt/apt.conf.d/20auto-upgrades"
     sudo touch "$cfg2"
-    create_backup_if_needed "$cfg2"
+    #create_backup_if_needed "$cfg2"
 
     cat <<EOF | sudo tee "$cfg2" > /dev/null
 APT::Periodic::Update-Package-Lists "1";
@@ -314,6 +314,7 @@ EOF
 
     msg_info "==> Unattended upgrades setup completed successfully."
     get_input "Press [Enter] to continue" ""
+    features
 }
 
 create_backup_if_needed() {
