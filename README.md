@@ -29,6 +29,7 @@ This is one suggested way:
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/ct/debian.sh)"
 ```
 Please note the script does not support updating the container. You have to take care of this yourself and configure unattended updates for example.
+This script has an option inside the features menu to turn on unattended updates if you like to handle this.
 
 **Log into your Proxmox PVE webpage and launch this command inside your Proxmox PVE host system shell to create a new container.**
 
