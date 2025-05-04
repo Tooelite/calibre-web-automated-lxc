@@ -348,7 +348,7 @@ Unattended-Upgrade::Package-Blacklist {
 Unattended-Upgrade::Automatic-Reboot "true";
 Unattended-Upgrade::Automatic-Reboot-Time "03:00";
 EOF
-
+}
 
 # Function to enable SSHFS support
 feature_enable_sshfs() {
