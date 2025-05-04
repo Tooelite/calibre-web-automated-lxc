@@ -266,6 +266,8 @@ feature_show_unattended_status(){
    
     msg_info "==> Optional: checking /var/log/unattended-upgrades/"
     ls -l /var/log/unattended-upgrades 2>/dev/null || msg_info "  > Directory not found."
+    get_input "Press [Enter] to continue" ""
+    features
 }
 
 # Function to uninstall unattended update support
@@ -275,6 +277,8 @@ feature_uninstall_unattended_updates() {
     sudo rm -f /etc/apt/apt.conf.d/20auto-upgrades
     sudo rm -f /etc/apt/apt.conf.d/50unattended-upgrades
     msg_info "Unattended upgrades have been removed."
+    get_input "Press [Enter] to continue" ""
+    features
 }
 
 # Function to enable unattended update support
@@ -309,6 +313,7 @@ EOF
     sudo unattended-upgrades --dry-run --debug
 
     msg_info "==> Unattended upgrades setup completed successfully."
+    get_input "Press [Enter] to continue" ""
 }
 
 create_backup_if_needed() {
@@ -634,6 +639,8 @@ feature_enable_sshfs() {
     
     # Completion message
     msg_info "Feature added!"
+    get_input "Press [Enter] to continue" ""
+    features
 }
 
 
