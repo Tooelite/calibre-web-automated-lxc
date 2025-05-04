@@ -212,13 +212,25 @@ features() {
   header
   header_features
   msg_info "1) Enable SSHFS support"
+  msg_info "2) Enable unattended updates"
+  msg_info "3) Uninstall unattended updates"
+  msg_info "4) Show current unattended update status and config"
   msg_info "q) Quit"
   echo
 
-  read -rp "Choose a feature to install [1/q]: " choice
+  read -rp "Choose a feature to install [1-4/q]: " choice
   case "$choice" in
     1)
-      enable_sshfs
+      feature_enable_sshfs
+      ;;
+    2)
+      feature_enable_unattended_updates
+      ;;
+    3)
+      feature_uninstall_unattended_updates
+      ;;
+    4)
+      feature_show_unattended_status
       ;;
     q | Q)
       msg_info "Quitting."
@@ -231,9 +243,110 @@ features() {
       ;;
   esac
 }
+# Function to show unattended updates status
+feature_show_unattended_status(){
+    msg_info "==> Checking unattended-upgrades installation status..."
+    if dpkg -l | grep -q unattended-upgrades; then
+        msg_info "  > Package is installed."
+    else
+        msg_info "  > Package is NOT installed."
+    fi
+
+    msg_info "==> Checking systemd timer (if any)..."
+    systemctl list-timers | grep -i unattended || msg_info "  > No systemd timer found."
+
+    msg_info "==> Showing config: /etc/apt/apt.conf.d/20auto-upgrades"
+    [ -f /etc/apt/apt.conf.d/20auto-upgrades ] && cat /etc/apt/apt.conf.d/20auto-upgrades || msg_info "  > File not found."
+
+    msg_info "==> Showing config: /etc/apt/apt.conf.d/50unattended-upgrades"
+    [ -f /etc/apt/apt.conf.d/50unattended-upgrades ] && cat /etc/apt/apt.conf.d/50unattended-upgrades || msg_info "  > File not found."
+
+    msg_info "==> Showing last 2 days upgrade logs (if any)..."
+    sudo journalctl -u unattended-upgrades --since "2 days ago" --no-pager || msg_info "  > No journal logs found."
+   
+    msg_info "==> Optional: checking /var/log/unattended-upgrades/"
+    ls -l /var/log/unattended-upgrades 2>/dev/null || msg_info "  > Directory not found."
+    get_input "Press [Enter] to continue" ""
+    features
+}
+
+# Function to uninstall unattended update support
+feature_uninstall_unattended_updates() {
+    msg_info "Removing unattended-upgrades..."
+    sudo apt remove --purge -y unattended-upgrades apt-listchanges
+    sudo rm -f /etc/apt/apt.conf.d/20auto-upgrades
+    sudo rm -f /etc/apt/apt.conf.d/50unattended-upgrades
+    sudo rm -f /var/log/unattended-upgrades
+    msg_info "Unattended upgrades have been removed."
+    get_input "Press [Enter] to continue" ""
+    features
+}
+
+# Function to enable unattended update support
+feature_enable_unattended_updates() {
+    msg_info "Installing required packages..."
+    sudo apt update
+    sudo apt install -y unattended-upgrades apt-listchanges
+
+    msg_info "Which updates should be automatically installed?"
+    msg_info "1) Security updates only"
+    msg_info "2) Security + system/distribution updates"
+    update_scope=$(get_input "Enter your choice (1 or 2)" "1")
+
+    local cfg1="/etc/apt/apt.conf.d/50unattended-upgrades"
+    sudo touch "$cfg1"
+
+    write_upgrade_sources "$update_scope" "$cfg1"
+    write_upgrade_options "$cfg1"
+
+    local cfg2="/etc/apt/apt.conf.d/20auto-upgrades"
+    sudo touch "$cfg2"
+
+    cat <<EOF | sudo tee "$cfg2" > /dev/null
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Download-Upgradeable-Packages "1";
+APT::Periodic::AutocleanInterval "7";
+APT::Periodic::Unattended-Upgrade "1";
+EOF
+
+    msg_info "==> Running dry-run to test configuration..."
+    sudo unattended-upgrades --dry-run --debug
+
+    msg_info "==> Unattended upgrades setup completed successfully."
+    get_input "Press [Enter] to continue" ""
+    features
+}
+
+write_upgrade_sources() {
+    local choice="$1"
+    local cfg="$2"
+
+    msg_info "==> Writing allowed origins for unattended upgrades..."
+    echo "Unattended-Upgrade::Allowed-Origins {" | sudo tee "$cfg" > /dev/null
+    echo '        "Debian stable";' | sudo tee -a "$cfg" > /dev/null
+
+    if [[ "$choice" == "2" ]]; then
+        echo '        "Debian stable-updates";' | sudo tee -a "$cfg" > /dev/null
+    fi
+
+    echo '        "Debian-security stable/updates";' | sudo tee -a "$cfg" > /dev/null
+    echo "};" | sudo tee -a "$cfg" > /dev/null
+}
+
+write_upgrade_options() {
+    local cfg="$1"
+
+    cat <<EOF | sudo tee -a "$cfg" > /dev/null
+Unattended-Upgrade::Package-Blacklist {
+};
+
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "03:00";
+EOF
+}
 
 # Function to enable SSHFS support
-enable_sshfs() {
+feature_enable_sshfs() {
     
     # Check if the script is being run as root
     if [[ $EUID -ne 0 ]]; then
@@ -348,7 +461,7 @@ enable_sshfs() {
             msg_info "The SSH public key is already in the 'authorized_keys' file on the remote server."
             replace_key=$(get_input "Do you want to replace the existing key? (y/n): " "y")
             if [[ "$replace_key" == "y" || "$replace_key" == "Y" ]]; then
-                msg_info "Removing the old key and adding the new one...\n"
+                msg_info "Removing the old key and adding the new one..."
                 ssh -i "$ssh_key" "$remote_user@$remote_host" "sed -i '/$pubkey/d' ~/.ssh/authorized_keys"
                 ssh-copy-id -i "${ssh_key}.pub" "$remote_user@$remote_host"
             else
@@ -461,9 +574,9 @@ enable_sshfs() {
     # 10. Patching the Calibre-Web Systemd Service and the auto_library.py file
     msg_info "Patch CWA services with new remote host location"
     msg_info "------------------------------------------------"
-    patch_service=$(get_input "Do you want to patch the Calibre-Web systemd service and '${CONFIG[LOCAL_MOUNT]}/scripts/auto_library.py' to update the path to the share? (y/n): " "y")
+    patch_service=$(get_input "Do you want to patch the Calibre-Web systemd service and '/opt/cwa/scripts/auto_library.py' to update the path to the share? (y/n): " "y")
     if [[ "$patch_service" == "y" || "$patch_service" == "Y" ]]; then
-        msg_info "Patching the Calibre-Web systemd service and 'opt/cwa/scripts/auto_library.py' to use the correct paths..."
+        msg_info "Patching the Calibre-Web systemd service and '/opt/cwa/scripts/auto_library.py' to use the correct paths..."
         
         # Path to the systemd service file
         SERVICE_FILE="/etc/systemd/system/cps.service"
@@ -516,6 +629,8 @@ enable_sshfs() {
     
     # Completion message
     msg_info "Feature added!"
+    get_input "Press [Enter] to continue" ""
+    features
 }
 
 
